@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get install -y --no-install-recommends \
         curl wget ca-certificates xvfb \
         libx11-6 libxcb1 libxext6 libxrender1 libgl1-mesa-glx \
-        libvulkan1 vulkan-tools \
+        libvulkan1 vulkan-tools mesa-vulkan-drivers \
         libgtk-3-0 libglib2.0-0 \
         libnss3 libasound2 libdrm2 libgbm1 libgl1 libglapi-mesa \
         libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 \
@@ -27,9 +27,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /opt
-
-RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y \
-    wine wine64 wine32
 
 #download from EPIC, move to external
 #https://www.unrealengine.com/en-US/realityscan/linux
