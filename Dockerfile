@@ -5,20 +5,31 @@ LABEL org.opencontainers.image.source="https://github.com/kersplody/realityscan-
 LABEL org.opencontainers.image.licenses="Commercial"
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV DISPLAY=:99
+ENV XDG_RUNTIME_DIR=/tmp/runtime-root
+ENV RS_REST_PORT=8080
+ENV RS_GRPC_PORT=50051
 
 # Install required packages (curl/wget, bzip2/xz support, x11-apps and GTK deps)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-      curl wget bzip2 xz-utils x11-apps ca-certificates \
-      libgtk-3-0 libdbus-glib-1-2 libxt6 \
-      libx11-xcb1 libxcb-shm0 libxcb-dri3-0 \
-      libvulkan1 vulkan-tools \
-      libxcomposite1 libasound2 && \
-    rm -rf /var/lib/apt/lists/*
+        curl wget ca-certificates xvfb \
+        libx11-6 libxcb1 libxext6 libxrender1 libgl1-mesa-glx \
+        libvulkan1 vulkan-tools \
+        libgtk-3-0 libglib2.0-0 \
+        libnss3 libasound2 libdrm2 libgbm1 libgl1 libglapi-mesa \
+        libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 \
+        winbind libfontconfig1 libsensors5 \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /opt
+
+RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y \
+    wine wine64 wine32
 
 #download from EPIC, move to external
 #https://www.unrealengine.com/en-US/realityscan/linux
@@ -36,13 +47,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     rm -rf /var/lib/apt/lists/* && \
     rm /opt/RealityScan-2.1.deb
 
-ENV RS_EXE="/opt/realityscan/support/realityscan/drive_c/Program Files/Epic Games/RealityScan/RealityScan.exe" \
-    RS_ARGS="-registerPlugin /opt/RealityScan.RemoteCommandPlugin.rsplugin" \
-    CON_NAME="F2BF1A58-867E-4DB1-A524-9D8291BCE69D" \
-    RSREMOTE_ARGS="-RsRemoteStartREST http://0.0.0.0:4321"
+RUN mkdir /tmp/runtime-root && chmod 700 /tmp/runtime-root
 
-COPY entrypoint.sh /opt/entrypoint.sh
-RUN chmod +x /opt/entrypoint.sh
+EXPOSE 8080 50051
 
-ENTRYPOINT ["/opt/entrypoint.sh"]
-# CMD ["bash"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["server"]
